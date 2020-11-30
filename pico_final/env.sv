@@ -52,6 +52,7 @@ class environment;
     pre_test();
     test();
     post_test();
+	$display("coverage= %0.2f",scb.cg.get_inst_coverage());
     $finish;
   endtask
    

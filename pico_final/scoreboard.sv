@@ -1,7 +1,6 @@
 class scoreboard;
     
 typedef mailbox #(transaction) mail_gen;
-
      mail_gen mon2scb;   
   int no_transactions;
    logic [31:0]scoreboard_regs[0:31];
@@ -20,16 +19,167 @@ bit [31:0] load_addr_rs;
     bit [31:0] temp_mem_rdata;
 	logic [31:0] temp_decode_rd [0:31];
 	
+	//coverage
+	logic [31:0] instr_cov;
+	
    integer i=0;
    logic Branch_taken=0;
    logic [31:0] prev_pc,curr_pc;
+   
+   
+   
+  covergroup cg;
+	opcode_6_0	:	coverpoint instr_cov[6:0] {
+		bins lui_begin   		= {7'b0110111};	//bin for lui 
+		bins auipc_begin		= {7'b0010111};	//bin for auipc
+		bins jal_begin   		= {7'b1101111};	//bin for jal
+		bins jalr_begin  		= {7'b1100111};	//bin for jalr
+		bins branch_begin		= {7'b1100011};	//bin for branch opcode
+		bins load_begin  		= {7'b0000011};	//bin for load
+		bins store_begin   		= {7'b0100011};	//bin for store 
+		bins reg_imm_begin   	= {7'b0010011}; //bin for register_immediate 
+		bins reg_reg_begin   	= {7'b0110011};	//bin for register_register 
+		bins illegal	= default;
+		
+		type_option.weight	= 0;	// only to count cross coverage
+	
+	}
+	
+	rd_11_7	:	coverpoint instr_cov[11:7]{
+		 bins rd[] 	= {[0:$]};
+		type_option.weight	= 0;
+	}
+	
+	fun3_14_12 : coverpoint instr_cov[14:12]{
+			 bins fun3[] 	= {[0:$]};
+
+		type_option.weight	= 0;
+	}
+	
+	rs1_19_15 : coverpoint instr_cov[19:15]{
+		bins rs1[] 	= {[0:$]};
+		type_option.weight	= 0;
+	}
+
+	rs2_24_20 : coverpoint instr_cov[24:20]{
+		bins rs2[] 	= {[0:$]};
+		type_option.weight	= 0;
+	}
+
+	fun7_31_25 : coverpoint instr_cov[31:25]{
+		bins fun7_bin1		= {7'b0000000};
+		bins fun7_bin2		= {7'b0100000};
+		type_option.weight	= 0;
+	}
+
+	sign_31 :	coverpoint instr_cov[31]{
+		bins sign_bit[] = {0,1};
+		type_option.weight	= 0;
+	}
+	
+	lui : cross sign_31,rd_11_7,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.lui_begin) ;
+	//	bins lui		= binsof(opcode_6_0.lui_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 1;
+	
+	}
+	
+	auipc : cross sign_31,rd_11_7,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.auipc_begin) ;
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 1;
+	
+	}	
+
+
+	jal : cross sign_31,rd_11_7,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.jal_begin) ;
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 1;
+	
+	}	
+
+	jalr : cross sign_31,rs1_19_15,fun3_14_12,rd_11_7,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.jalr_begin) ;
+		ignore_bins rem2 = !binsof(fun3_14_12) intersect {3'b000};
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 1;
+	
+	}		
+
+	branch : cross sign_31,rs2_24_20,rs1_19_15,fun3_14_12,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.branch_begin) ;
+		ignore_bins rem2 = binsof(fun3_14_12) intersect {3'b010,3'b011};
+
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 6;
+	
+	}
+
+	load : cross sign_31,rs1_19_15,fun3_14_12,rd_11_7,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.load_begin) ;
+		ignore_bins rem2 = binsof(fun3_14_12) intersect {3'b011,3'b110,3'b111};
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 5;
+	
+	}	
+	
+	store : cross sign_31,rs2_24_20,rs1_19_15,fun3_14_12,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.store_begin) ;
+		ignore_bins rem2 = !binsof(fun3_14_12) intersect {3'b000,3'b001,3'b010};
+
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 3;
+	
+	}
+
+	reg_imm : cross sign_31,rs1_19_15,fun3_14_12,rd_11_7,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.reg_imm_begin) ;
+		ignore_bins rem2 = binsof(fun3_14_12) intersect {3'b001,3'b101};
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 6;
+	
+	}
+
+	set_imm : cross fun7_31_25,rs2_24_20,rs1_19_15,fun3_14_12,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.reg_imm_begin) ;
+		ignore_bins rem2 = !binsof(fun3_14_12) intersect {3'b001,3'b101};
+		ignore_bins rem3 = binsof(fun7_31_25.fun7_bin2)&& binsof(fun3_14_12) intersect {3'b001};
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 3;
+	
+	}
+
+	reg_reg : cross fun7_31_25,rs2_24_20,rs1_19_15,fun3_14_12,opcode_6_0{
+		ignore_bins rem = !binsof(opcode_6_0.reg_reg_begin) ;
+		ignore_bins rem2 = binsof(fun7_31_25.fun7_bin2)&& binsof(fun3_14_12) intersect {3'b001,3'b010,3'b011,3'b100,3'b110,3'b111};
+		//ignore_bins rem3 = !binsof(fun7_31_25.fun7_bin2)&& binsof(fun3_14_12) intersect {3'b101};
+		//bins auipc		= binsof(opcode_6_0.auipc_begin) && binsof(rd_11_7) && binsof(sign_31);
+		//bins misc		= default;
+		type_option.weight	= 10;
+	
+	}
+  endgroup
+      
   function new(mailbox mon2scb);
     this.mon2scb = mon2scb;
 	for ( i=0;i<32;i++) begin
 		scoreboard_regs[i] = 0;
 	end
+	cg = new;
   endfunction
-   
+  
+  
+
   task main;
     transaction trans;
 	 mon2scb.get(trans);
@@ -40,7 +190,9 @@ bit [31:0] load_addr_rs;
 //		  $display("----------------------------------------------");
 	// mon2scb.get(trans);
 
-
+		// coverage 
+		instr_cov=trans.mem_rdata;
+		cg.sample();
 		case (trans.mem_rdata[6:0])
 		
 		
@@ -66,7 +218,7 @@ bit [31:0] load_addr_rs;
 				
 				3'b001: begin
 					$display("Instruction:SLLI");
-					$display("[Scoreboard]rs1 %02d: 0x%08x rs2 %02d: 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20],scoreboard_regs[trans.mem_rdata[24:20]]);
+					$display("[Scoreboard]LD_RS1: %02d: 0x%08x Shift_amt: %02d",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20]);
 					scoreboard_regs[trans.mem_rdata[11:7]] = scoreboard_regs[trans.mem_rdata[19:15]] << trans.mem_rdata[24:20];
 					scoreboard_regs[0] = 0;
 					rd_addr=trans.mem_rdata[11:7];
@@ -98,7 +250,7 @@ bit [31:0] load_addr_rs;
 				3'b011: begin
 				   $display("Instruction:SLTIU");
 			       $display("[Scoreboard]LD_RS1: %02d 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]]);
-                   if(scoreboard_regs[trans.mem_rdata[19:15]] == 0 )
+  /*                  if(scoreboard_regs[trans.mem_rdata[19:15]] == 0 )
 					   scoreboard_regs[trans.mem_rdata[11:7]] = 1 ;
 					// else
 					//   scoreboard_regs[trans.mem_rdata[11:7]] = 1 ;
@@ -107,7 +259,10 @@ bit [31:0] load_addr_rs;
 					   scoreboard_regs[trans.mem_rdata[11:7]] = 1;
 				   else
 					   scoreboard_regs[trans.mem_rdata[11:7]] = 0;	
-					   
+	 */				   
+	 
+						scoreboard_regs[trans.mem_rdata[11:7]] =scoreboard_regs[trans.mem_rdata[19:15]] < {{20{trans.mem_rdata[31]}} , trans.mem_rdata[31:20]} ;
+
 					scoreboard_regs[0] = 0;
 					   
 					rd_addr=trans.mem_rdata[11:7];
@@ -121,7 +276,7 @@ bit [31:0] load_addr_rs;
 				 
 				3'b100: begin
 					$display("Instruction:XORI");
-					$display("[Scoreboard]rs1 %02d: 0x%08x rs2 %02d: 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20],scoreboard_regs[trans.mem_rdata[24:20]]);
+					$display("[Scoreboard]LD_RS1: %02d: 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]]);
 					scoreboard_regs[trans.mem_rdata[11:7]] = scoreboard_regs[trans.mem_rdata[19:15]] ^ {{20{trans.mem_rdata[31]}} , trans.mem_rdata[31:20]} ;
 					scoreboard_regs[0] = 0;
 					rd_addr=trans.mem_rdata[11:7];
@@ -136,7 +291,7 @@ bit [31:0] load_addr_rs;
 				3'b101: begin
 					if(trans.mem_rdata[31:25] == 7'b0000000) begin
 						$display("Instruction:SRLI");
-						$display("[Scoreboard]rs1 %02d: 0x%08x rs2 %02d: 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20],scoreboard_regs[trans.mem_rdata[24:20]]);
+					$display("[Scoreboard]LD_RS1: %02d: 0x%08x Shift_amt: %02d",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20]);
                         scoreboard_regs[trans.mem_rdata[11:7]] = scoreboard_regs[trans.mem_rdata[19:15]] >> trans.mem_rdata[24:20];
 						scoreboard_regs[0] = 0;
 						rd_addr=trans.mem_rdata[11:7];
@@ -149,7 +304,7 @@ bit [31:0] load_addr_rs;
 					end
 				    else if (trans.mem_rdata[31:25] == 7'b0100000) begin
 						$display("Instruction:SRAI");
-						$display("[Scoreboard]rs1 %02d: 0x%08x rs2 %02d: 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20],scoreboard_regs[trans.mem_rdata[24:20]]);
+					$display("[Scoreboard]LD_RS1: %02d: 0x%08x Shift_amt: %02d",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20]);
 						scoreboard_regs[trans.mem_rdata[11:7]] = $signed (scoreboard_regs[trans.mem_rdata[19:15]]) >>> trans.mem_rdata[24:20];
 						scoreboard_regs[0] = 0;
 						rd_addr=trans.mem_rdata[11:7];
@@ -165,7 +320,7 @@ bit [31:0] load_addr_rs;
 				
                 3'b110: begin
 			        $display("Instruction:ORI");
-					$display("[Scoreboard]rs1 %02d: 0x%08x rs2 %02d: 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20],scoreboard_regs[trans.mem_rdata[24:20]]);
+			       $display("[Scoreboard]LD_RS1: %02d 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]]);
 			        scoreboard_regs[trans.mem_rdata[11:7]] = scoreboard_regs[trans.mem_rdata[19:15]] | {{20{trans.mem_rdata[31]}} , trans.mem_rdata[31:20]} ;
 					scoreboard_regs[0] = 0;
 					rd_addr=trans.mem_rdata[11:7];
@@ -179,7 +334,7 @@ bit [31:0] load_addr_rs;
 					
 			    3'b111: begin 
 			         $display("Instruction:ANDI");
-					 $display("[Scoreboard]rs1 %02d: 0x%08x rs2 %02d: 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]],trans.mem_rdata[24:20],scoreboard_regs[trans.mem_rdata[24:20]]);
+			       $display("[Scoreboard]LD_RS1: %02d 0x%08x",trans.mem_rdata[19:15],scoreboard_regs[trans.mem_rdata[19:15]]);
 					 scoreboard_regs[trans.mem_rdata[11:7]] = scoreboard_regs[trans.mem_rdata[19:15]] & {{20{trans.mem_rdata[31]}} , trans.mem_rdata[31:20]} ;
 					 scoreboard_regs[0] = 0;
 					 rd_addr=trans.mem_rdata[11:7];
