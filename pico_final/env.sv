@@ -1,36 +1,37 @@
 class environment;
-   
+   //generator, driver, monitor and scoreboard instances
   generator gen;
   driver    driv;
    monitor    mon;
   scoreboard scb;
   
   
-   event gen_ended;
+   event gen_ended; //event for synchronization between generator and test_layered
    
  typedef mailbox #(transaction) mail_gen;
- mail_gen gen2driv;   
- mail_gen mon2scb;
-     virtual pico_interface intf;
-	// virtual pico_interface.monitor mon_intf;
+ mail_gen gen2driv;    //gen2driv mailbox handle's
+ mail_gen mon2scb;   //mon2scb mailbox handle's
+     virtual pico_interface intf; // virtual pico_interface.monitor mon_intf;
+	
    
   function new( virtual pico_interface intf);
-    this.intf = intf;
+    this.intf = intf;  //get the interface from test_layered
 	//this.mon_intf = intf;
      
-    gen2driv = new();
-    mon2scb = new(); 
-    gen  = new(gen2driv,gen_ended);
-    driv = new(intf,gen2driv);
-	mon  = new(intf,mon2scb);
-    scb  = new(mon2scb);
+    gen2driv = new(); //creating the mailbox (Same handle will be shared across generator and driver)
+    mon2scb = new();  //creating the mailbox (Same handle will be shared across monitor and scoreboard)
+    gen  = new(gen2driv,gen_ended); //creating generator
+    driv = new(intf,gen2driv);  //creating driver
+	mon  = new(intf,mon2scb);  //creating monitor
+    scb  = new(mon2scb);       //creating scoreboard
   endfunction
    
-  //
+  //pre_test() – Method to call Initialization. i.e, reset method.
   task pre_test();
     driv.reset();
   endtask
-   
+  
+//test() – Method to call Stimulus Generation and Stimulus Driving  
   task test();
     fork
     gen.main();
@@ -39,7 +40,8 @@ class environment;
     scb.main(); 
     join_any
   endtask
-   
+ 
+//post_test() – Method to wait the completion of generation and driving. 
   task post_test();
     wait(gen.ended.triggered);
     wait(gen.repeat_count == driv.no_transactions);

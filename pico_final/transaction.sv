@@ -1,4 +1,5 @@
 class transaction;
+    //declaring the transaction items
     bit  mem_valid;
 	bit  mem_instr;
 	bit  mem_ready;
@@ -10,7 +11,7 @@ class transaction;
 	logic [31:0] decode_rd [0:31];
 	
 	string name;
-	
+	//constaints, to generate the valid instructions of pico RV
 	constraint valid_instr_load_store_branch_jump_ui{
 		//mem_rdata[6:0] inside {7'b0000011};
 		mem_rdata[6:0] dist {7'b0110111:=1, 7'b0010111 :=1, 7'b1101111:=1, 7'b1100111:=6, 7'b1100011:/36,7'b0000011:/30 ,7'b0100011:/25};

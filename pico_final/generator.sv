@@ -1,16 +1,21 @@
 class generator;
-   
-  rand transaction trans;
+
+  rand transaction trans; //declaring transaction class
    
   typedef mailbox #(transaction) mail_gen;
- mail_gen gen2driv;
-  int  repeat_count; 
-  event ended;
+  
+ mail_gen gen2driv;  //declaring generator to driver mailbox
+ 
+  int  repeat_count; //repeat count, to specify number of items to generate
+  
+  event ended; //Adding an event to indicate the completion of the generation process
+  
   function new(mailbox gen2driv,event ended);
-    this.gen2driv = gen2driv;
+    this.gen2driv = gen2driv; // getting the mailbox handle from environment
     this.ended    = ended;
   endfunction
   
+   //main task, generates(create and randomizes) the repeat_count number of transaction packets and puts into mailbox
   task main();
   repeat(repeat_count/2) begin
       trans = new("transact");

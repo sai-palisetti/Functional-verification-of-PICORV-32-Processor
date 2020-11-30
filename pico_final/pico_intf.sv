@@ -1,4 +1,6 @@
 interface pico_interface(input logic clk,reset);
+
+    //declaring the signals
 	logic trap;
 
 	logic        mem_valid;
@@ -85,6 +87,7 @@ interface pico_interface(input logic clk,reset);
 		
 	endclocking
 	
+	 //monitor clocking block
 		clocking monitor_cb @(posedge clk);
 		default input #1 output #0;
 		//output clk;

@@ -3,14 +3,15 @@
 //`DRIV_IF will point to intf.DRIVER.driver_cb
 
 class driver;
-     int no_transactions;
+     int no_transactions; //used to count the number of transactions
 	 rand bit [31:0]driver_load_instr;
-     virtual pico_interface.tb intf;
+     virtual pico_interface.tb intf;  //creating virtual interface handle
 	typedef mailbox #(transaction) mail_gen;
-	mail_gen gen2driv;   
+	mail_gen gen2driv;   //creating mailbox handle
+	
   function new(virtual pico_interface intf,mailbox gen2driv);
-    this.intf = intf;
-    this.gen2driv = gen2driv;
+    this.intf = intf; //getting the interface
+    this.gen2driv = gen2driv;  //getting the mailbox handle from  environment
   endfunction
   
   /* 	constraint valid_load_insr{
@@ -18,7 +19,9 @@ class driver;
 		driver_load_addr[17:16] inside {2'b00};
 	} */
 	
-     task reset;
+	
+	//Reset task, Reset the Interface signals to default/initial values
+    task reset;
     wait(!intf.tb.reset);
     $display("--------- [DRIVER] Reset Started ---------");
      `DRIV_IF.mem_ready <=0; 
@@ -31,11 +34,7 @@ class driver;
    
   //drive the transaction items to interface signals
   task main;
-    forever begin
-			  	  	  	 
-
-	     
-		 
+    forever begin	 
 	@(posedge intf.tb.cb);
 		if (`DRIV_IF.mem_valid) begin
 

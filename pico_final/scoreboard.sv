@@ -1,8 +1,8 @@
 class scoreboard;
     
 typedef mailbox #(transaction) mail_gen;
-     mail_gen mon2scb;   
-  int no_transactions;
+     mail_gen mon2scb;    //creating mailbox handle
+  int no_transactions;    //used to count the number of transactions
    logic [31:0]scoreboard_regs[0:31];
    logic [4:0] rd_addr;
 	bit [31:0] load_addr;
@@ -171,7 +171,7 @@ bit [31:0] load_addr_rs;
   endgroup
       
   function new(mailbox mon2scb);
-    this.mon2scb = mon2scb;
+    this.mon2scb = mon2scb;  //getting the mailbox handles from  environment
 	for ( i=0;i<32;i++) begin
 		scoreboard_regs[i] = 0;
 	end
