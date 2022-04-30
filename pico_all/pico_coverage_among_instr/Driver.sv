@@ -76,7 +76,7 @@ static   logic Branch_taken;
 						2'b11 : `DRIV_IF.mem_rdata <= {trans.mem_rdata[31:22],2'b01,trans.mem_rdata[19:0]};					
 					endcase
 				end
-				7'b0000011 : begin
+				7'b0000011 : begin //LB
 					//environment::update_scb_regs();
 					//scoreboard_regs=environment::env_regs;
 							driver_load_instr=$random; 
